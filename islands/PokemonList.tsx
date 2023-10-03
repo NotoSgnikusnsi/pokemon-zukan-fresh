@@ -55,6 +55,7 @@ export default function PokemonList() {
         {allPokemons.map((pokemon, index) => {
           return (
             <PokemonItem
+              key={index}
               id={pokemon.id}
               name={pokemon.name}
               image={pokemon.image}
