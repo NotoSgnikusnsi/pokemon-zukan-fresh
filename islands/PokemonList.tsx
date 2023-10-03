@@ -1,16 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import { Button } from "../components/Button.tsx";
 import PokemonItem from "../components/PokemonItem.tsx";
+import { PokemonModel } from "../components/PokemonModel.tsx";
 
 export default function PokemonList() {
-  interface PokemonList {
-    id: number;
-    name: string;
-    image: string;
-    type: string;
-  }
-
-  const [allPokemons, setAllPokemons] = useState<PokemonList[]>([]);
+  const [allPokemons, setAllPokemons] = useState<PokemonModel[]>([]);
   const [url, setUrl] = useState<string>(
     "https://pokeapi.co/api/v2/pokemon?limit=20",
   );
@@ -19,7 +13,7 @@ export default function PokemonList() {
     fetch(url)
       .then((res) => res.json())
       .then(
-        (data: { results: { name: string; url: string }[] }) => {
+        (data: { next: string; results: { name: string; url: string }[] }) => {
           createPokemonObject(data.results);
           setUrl(data.next);
         },
@@ -33,14 +27,15 @@ export default function PokemonList() {
         .then((data) => {
           const _img = data.sprites.other["official-artwork"].front_default;
           const _type = data.types[0].type.name;
-          const newPokemonList: PokemonList = {
+          const newPokemonList: PokemonModel = {
             id: data.id,
             name: data.name,
             image: _img,
             type: _type,
           };
-          console.log(newPokemonList);
-          setAllPokemons((currentList) => [...currentList, newPokemonList]);
+          setAllPokemons((currentList) =>
+            [...currentList, newPokemonList].sort((a, b) => a.id - b.id)
+          );
         });
     });
   };
@@ -63,7 +58,12 @@ export default function PokemonList() {
           );
         })}
       </div>
-      <Button />
+      <button
+        class="my-8 py-2 px-4 bg-blue-500 text-white rounded-lg"
+        onClick={getAllPokemons}
+      >
+        もっとみる
+      </button>
     </div>
   );
 }
