@@ -13,58 +13,70 @@ export default function PokemonList() {
   const getAllPokemons = () => {
     setLoading(true);
     fetch(url)
-      .then((res) => res.json())
-      .then(
-        (data: { next: string; results: { name: string; url: string }[] }) => {
-          createPokemonObject(data.results);
-          setUrl(data.next);
-        },
-      )
-      .catch((err) => setError(err.message))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("ネットワークエラー");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        createPokemonObject(data.results);
+        setUrl(data.next);
+      })
+      .catch((err) => {
+        setError("データの取得中にエラーが発生しました: " + err.message);
+      })
       .finally(() => setLoading(false));
   };
 
   const createPokemonObject = (results: { name: string; url: string }[]) => {
-    results.forEach((pokemon) => {
+    const fetchPromises = results.map((pokemon) =>
       fetch(pokemon.url)
-        .then((res) => res.json())
-        .then((data) => {
-          const _img = data.sprites.other["official-artwork"].front_default;
-          const _type = data.types[0].type.name;
-          const newPokemonList: PokemonModel = {
-            id: data.id,
-            name: data.name,
-            image: _img,
-            type: _type,
-          };
-          setAllPokemons((currentList) =>
-            [...currentList, newPokemonList].sort((a, b) => a.id - b.id)
-          );
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("データの取得中にエラーが発生しました");
+          }
+          return res.json();
         })
-        .catch((err) => setError(err.message));
-    });
+        .then((data) => ({
+          id: data.id,
+          name: data.name,
+          image: data.sprites.other["official-artwork"].front_default,
+          type: data.types[0].type.name,
+        }))
+    );
+
+    Promise.all(fetchPromises)
+      .then((newPokemons) => {
+        setAllPokemons((currentList) =>
+          [...currentList, ...newPokemons].sort((a, b) => a.id - b.id)
+        );
+      })
+      .catch((err) => {
+        setError(
+          "ポケモンのデータ取得中にエラーが発生しました: " + err.message,
+        );
+      });
   };
 
-  useEffect(() => (
-    getAllPokemons()
-  ), []);
+  useEffect(() => {
+    getAllPokemons();
+  }, []);
 
   return (
     <div class="flex flex-col items-center">
       <div class="flex flex-wrap justify-center gap-2">
-        {allPokemons.map((pokemon, index) => {
-          return (
-            <PokemonItem
-              key={index}
-              id={pokemon.id}
-              name={pokemon.name}
-              image={pokemon.image}
-              type={pokemon.type}
-            />
-          );
-        })}
+        {allPokemons.map((pokemon, index) => (
+          <PokemonItem
+            key={index}
+            id={pokemon.id}
+            name={pokemon.name}
+            image={pokemon.image}
+            type={pokemon.type}
+          />
+        ))}
       </div>
-      {error !== "" ? <div>{error}</div> : <></>}
+      {error && <div>{error}</div>}
       {isLoading
         ? (
           <div class="my-8 py-2 px-4 bg-blue-500 text-white rounded-lg">
