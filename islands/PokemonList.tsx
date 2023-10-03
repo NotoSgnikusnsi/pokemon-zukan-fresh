@@ -3,42 +3,46 @@ import PokemonItem from "../components/PokemonItem.tsx";
 import { PokemonModel } from "../components/PokemonModel.tsx";
 
 export default function PokemonList() {
-  const [allPokemons, setAllPokemons] = useState<PokemonModel[]>([]);
+  /* 変数を定義する */
+  const [allPokemons, setAllPokemons] = useState<PokemonModel[]>([]); // ポケモンのリストを管理する
   const [url, setUrl] = useState<string>(
     "https://pokeapi.co/api/v2/pokemon?limit=20",
-  );
-  const [isLoading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  ); // ポケモンのデータを取得するためのURLを管理する
+  const [isLoading, setLoading] = useState(false); // ローディングの状態を管理する
+  const [error, setError] = useState<string>(""); // エラー内容を管理する
 
+  /* 20体のポケモンのリストを取得し渡す */
   const getAllPokemons = () => {
-    setLoading(true);
-    fetch(url)
+    setLoading(true); // ローディングを開始する
+    fetch(url) // ポケモンのデータを取得する
       .then((res) => {
-        if (!res.ok) {
-          throw new Error("ネットワークエラー");
+        if (!res.ok) { // 正常に通信できているか確認する
+          throw new Error("ネットワークエラー"); // 例外を発生させcatchに送る
         }
-        return res.json();
+        return res.json(); // jsonからオブジェクトに変換して渡す
       })
       .then((data) => {
-        createPokemonObject(data.results);
-        setUrl(data.next);
+        createPokemonObject(data.results); // ポケモンのリストを渡す
+        setUrl(data.next); // 次の20体のポケモンを取得するためのURLを設定する
       })
       .catch((err) => {
-        setError("データの取得中にエラーが発生しました: " + err.message);
+        setError("データの取得中にエラーが発生しました: " + err.message); // 発生したエラーを設定する
       })
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false)); // すべての処理が終わった後にローディングを終了する
   };
 
+  /* 個々のポケモンのオブジェクトを作成する */
   const createPokemonObject = (results: { name: string; url: string }[]) => {
     const fetchPromises = results.map((pokemon) =>
-      fetch(pokemon.url)
+      // 渡されたリストを元に個々のポケモンのオブジェクトを作成し、新しい配列を生成する
+      fetch(pokemon.url) // ポケモンのデータを取得する
         .then((res) => {
-          if (!res.ok) {
-            throw new Error("データの取得中にエラーが発生しました");
+          if (!res.ok) { // 正常に通信できているか確認する
+            throw new Error("データの取得中にエラーが発生しました"); // 例外を発生させcatchに送る
           }
-          return res.json();
+          return res.json(); // jsonからオブジェクトに変換して渡す
         })
-        .then((data) => ({
+        .then((data) => ({ // オブジェクトを作成する
           id: data.id,
           name: data.name,
           image: data.sprites.other["official-artwork"].front_default,
@@ -46,23 +50,25 @@ export default function PokemonList() {
         }))
     );
 
-    Promise.all(fetchPromises)
-      .then((newPokemons) => {
+    Promise.all(fetchPromises) // 非同期処理を同時に実行する
+      .then((newPokemons) => { // ポケモンのリストを保存する
         setAllPokemons((currentList) =>
           [...currentList, ...newPokemons].sort((a, b) => a.id - b.id)
         );
       })
-      .catch((err) => {
+      .catch((err) => { // エラーが発生した場合、エラー内容を保存する
         setError(
           "ポケモンのデータ取得中にエラーが発生しました: " + err.message,
         );
       });
   };
 
+  /* 最初にページが読み込まれたときにブラウザへ描画する */
   useEffect(() => {
     getAllPokemons();
   }, []);
 
+  /* コンポーネントを返す */
   return (
     <div class="flex flex-col items-center">
       <div class="flex flex-wrap justify-center gap-2">
