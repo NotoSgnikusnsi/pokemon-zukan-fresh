@@ -42,7 +42,6 @@ export default function PokemonList() {
           {
             id: data.id,
             name: data.name,
-            // image: data.sprites.other["official-artwork"].front_default,
             image:
               `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png`,
             type: data.types[0].type.name,
